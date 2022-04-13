@@ -1,182 +1,174 @@
-body {
-    margin: 0
+let TC = document.querySelector(".ticket-container");
+let allFilters = document.querySelectorAll(".filter");
+let modalVisible = false;
+
+function loadTTickets(color) {
+  let allTasks = localStorage.getItem("allTasks");
+  if (allTasks != null) {
+    allTasks = JSON.parse(allTasks);
+    if (color) {
+      allTasks = allTasks.filter(function (data) {
+        return data.priority == color;
+      });
+    }
+    for (let i = 0; i < allTasks.length; i++) {
+      let ticket = document.createElement("div");
+      ticket.classList.add("ticket");
+      ticket.innerHTML = `<div class="ticket-color ticket-color-${allTasks[i].priority}"></div>
+                            <div class="ticket-id">#${allTasks[i].ticketId}</div>
+                            <div class="task">${allTasks[i].task}</div>`;
+      TC.appendChild(ticket);
+      ticket.addEventListener("click", function (e) {
+        if (e.currentTarget.classList.contains("active")) {
+          e.currentTarget.classList.remove("active");
+        } else {
+          e.currentTarget.classList.add("active");
+        }
+      });
+    }
+  }
 }
 
-* {
-    box-sizing: border-box;
+loadTTickets();
+
+for (let i = 0; i < allFilters.length; i++) {
+  allFilters[i].addEventListener("click", filterHandler);
 }
 
-.navbar {
-    height: 12vh;
-    background-color: #333;
-    display: flex;
+function filterHandler(e) {
+  TC.innerHTML = "";
+  if (e.currentTarget.classList.contains("active")) {
+    e.currentTarget.classList.remove("active");
+    loadTTickets();
+  } else {
+    let activeFIlter = document.querySelector(".filter.active");
+    if (activeFIlter) {
+      activeFIlter.classList.remove("active");
+    }
+    e.currentTarget.classList.add("active");
+    let ticketPriority = e.currentTarget.children[0].classList[0].split("-")[0];
+    loadTTickets(ticketPriority);
+  }
+}
+let addBtn = document.querySelector(".add");
+let deleteBtn = document.querySelector(".delete");
+
+deleteBtn.addEventListener("click", function (e) {
+  let selectedTickets = document.querySelectorAll(".ticket.active");
+  let allTasks = JSON.parse(localStorage.getItem("allTasks"));
+  for (let i = 0; i < selectedTickets.length; i++) {
+    selectedTickets[i].remove();
+    let ticketID = selectedTickets[i].querySelector(".ticket-id").innerText;
+    allTasks = allTasks.filter(function (data) {
+      return "#" + data.ticketId != ticketID;
+    });
+  }
+  localStorage.setItem("allTasks", JSON.stringify(allTasks));
+});
+
+addBtn.addEventListener("click", showModal);
+
+let selectedPriority;
+
+function showModal(e) {
+  if (!modalVisible) {
+    // let modal = document.createElement("div");
+    // modal.classList.add("modal");
+    // modal.innerHTML = `<div class="task-to-be-added" data-typed="false" contenteditable="true"></div>
+    // <div class="modal-priority-list">
+    //     <div class="modal-pink-filter modal-filter"></div>
+    //     <div class="modal-blue-filter modal-filter"></div>
+    //     <div class="modal-green-filter  modal-filter"></div>
+    //     <div class="modal-yellow-filter  modal-filter"></div>
+    // </div>`;
+    // TC.appendChild(modal);
+
+    let modal = document.createElement("div");
+    modal.classList.add("modal");
+    modal.innerHTML = `<div class="task-to-be-added" data-typed="false" contenteditable="true">Enter your task here</div>
+            <div class="modal-priority-list">
+                <div class="modal-pink-filter modal-filter active"></div>
+                <div class="modal-blue-filter modal-filter"></div>
+                <div class="modal-green-filter  modal-filter"></div>
+                <div class="modal-yellow-filter  modal-filter"></div>
+            </div>`;
+    TC.appendChild(modal);
+    selectedPriority = "pink"; //by default
+    let taskModal = document.querySelector(".task-to-be-added");
+    taskModal.addEventListener("click", function (e) {
+      if (e.currentTarget.getAttribute("data-typed") == "false") {
+        e.currentTarget.innerText = "";
+        e.currentTarget.setAttribute("data-typed", "true");
+      }
+    });
+    modalVisible = true;
+    taskModal.addEventListener("keypress", addTicket.bind(this, taskModal));
+    let modalFilters = document.querySelectorAll(".modal-filter");
+    for (let i = 0; i < modalFilters.length; i++) {
+      modalFilters[i].addEventListener(
+        "click",
+        selectPriority.bind(this, taskModal)
+      );
+    }
+  }
 }
 
-.ticket-container {
-    height: 88vh;
-    background-color: #f2f2f2;
-    position: relative;
-    padding: 3rem;
-    display: flex;
-    justify-content: space-evenly;
-    flex-wrap: wrap;
-    overflow-y: auto;
+function selectPriority(taskModal, e) {
+  let activeFIlter = document.querySelector(".modal-filter.active");
+  activeFIlter.classList.remove("active");
+  selectedPriority = e.currentTarget.classList[0].split("-")[1];
+  e.currentTarget.classList.add("active");
+  taskModal.click();
+  taskModal.focus();
 }
 
-.filter-container,
-.add-delete-container {
-    height: 8vh;
-    margin-top: 2vh;
-    margin-left: 8vw;
-    border-radius: 3px;
-    background-color: #444;
-}
+function addTicket(taskModal, e) {
+  console.log(e);
+  if (
+    e.key == "Enter" &&
+    e.shiftKey == false &&
+    taskModal.innerText.trim() != ""
+  ) {
+    let task = taskModal.innerText;
+    let id = uid();
+    // let ticket = document.createElement("div");
+    // ticket.classList.add("ticket");
+    // ticket.innerHTML = `<div class="ticket-color ticket-color-${selectedPriority}"></div>
+    //                 <div class="ticket-id">#${id}</div>
+    //                 <div class="task">${task}</div>`;
 
-.filter-container {
-    width: 18vw;
-    display: flex;
-}
+    document.querySelector(".modal").remove();
+    modalVisible = false;
+    // TC.appendChild(ticket);
+    // ticket.addEventListener("click", function(e) {
+    //     if(e.currentTarget.classList.contains("active")) {
+    //         e.currentTarget.classList.remove("active");
+    //     } else {
+    //         e.currentTarget.classList.add("active");
+    //     }
+    // });
 
-.add-delete-container {
-    width: 9vw;
-    display: flex;
-}
+    let allTasks = localStorage.getItem("allTasks");
 
-.filter {
-    height: 100%;
-    width: 25%;
-}
+    if (allTasks == null) {
+      let data = [{ ticketId: id, task: task, priority: selectedPriority }];
+      localStorage.setItem("allTasks", JSON.stringify(data));
+    } else {
+      let data = JSON.parse(allTasks);
+      data.push({ ticketId: id, task: task, priority: selectedPriority });
+      localStorage.setItem("allTasks", JSON.stringify(data));
+    }
 
-.pink-color-btn,
-.blue-color-btn,
-.green-color-btn,
-.yellow-color-btn {
-    display: block;
-    width: 40%;
-    height: 40%;
-    border-radius: 3px;
-    margin-top: calc(8vh * 0.3);
-    margin-bottom: calc(8vh * 0.3);
-    margin-left: calc(4.5vw * 0.3);
-    margin-right: calc(4.5vw * 0.3);
-}
-
-.pink-color-btn, .modal-pink-filter, .ticket-color-pink {
-    background-color: pink;
-}
-
-.green-color-btn, .modal-green-filter, .ticket-color-green {
-    background-color: green;
-}
-
-.yellow-color-btn, .modal-yellow-filter, .ticket-color-yellow {
-    background-color: yellow;
-}
-
-.blue-color-btn, .modal-blue-filter, .ticket-color-blue {
-    background-color: blue;
-}
-
-.filter:hover {
-    background-color: black;
-    cursor: pointer;
-}
-
-.filter.active {
-    background-color: black;
-}
-
-.add,.delete {
-    height: 100%;
-    width: 50%;
-}
-
-.action-btn {
-    display: block;
-    height: 40%;
-    width: 40%;
-    margin-top: calc(8vh * 0.3);
-    margin-bottom: calc(8vh * 0.3);
-    margin-left: calc(4.5vw * 0.3);
-    margin-right: calc(4.5vw * 0.3);
-    background-color: white;
-    padding-left: 3%;
-}
-
-.add:hover, .delete:hover {
-    background-color: black;
-    cursor: pointer;
-}
-
-.modal {
-    box-shadow: 0px 0px 50px 10px grey;
-    height: 18rem;
-    width: 35rem;
-    background-color: white;
-    display: flex;
-    position: absolute;
-    top: 10rem;
-    left: calc((100vw - 35rem) / 2)
-}
-
-.task-to-be-added {
-    width: 70%;
-    height: 100%;
-    padding: 3rem;
-    outline: none;
-    overflow: auto;
-}
-
-.modal-priority-list {
-    display: flex;
-    flex-direction: column;
-    width: 30%;
-    height: 100%;
-    justify-content: space-between;
-    padding: 3rem;
-    background-color: #444;
-}
-
-.modal-filter {
-    width: 100%;
-    height: 20%;
-}
-
-.modal-filter:hover {
-    opacity: 0.5;
-    cursor: pointer;
-}
-
-.modal-filter.active {
-    border: 5px solid;
-}
-
-.ticket {
-    height: 9rem;
-    width: 16rem;
-    background-color: white;
-    margin-bottom: 15px;
-    /* margin: 0 auto 0 auto; */
-}
-
-.ticket-color {
-    height: 6%;
-    width: 100%;
-}
-
-.ticket-id {
-    height: 15%;
-    width: 100%;
-    padding: 3%;
-    color: grey;
-}
-
-.task {
-    height: 79%;
-    width: 100%;
-    padding: 3%;
-}
-
-.ticket.active {
-    box-shadow: 0 0 3px 1px;
+    let activeFilter = document.querySelector(".filter.active");
+    TC.innerHTML = "";
+    if (activeFilter) {
+      let priority = activeFilter.children[0].classList[0].split("-")[0];
+      loadTTickets(priority);
+    } else {
+      loadTTickets();
+    }
+  } else if (e.key == "Enter" && e.shiftKey == false) {
+    e.preventDefault();
+    alert("Error! you have not type anything in task.");
+  }
 }
